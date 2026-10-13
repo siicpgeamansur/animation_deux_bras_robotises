@@ -34,7 +34,7 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            width: 320px;
+            width: 340px;
         }
         .control-group {
             background: #f8f9fa;
@@ -53,13 +53,22 @@
             font-style: italic;
             font-family: "Times New Roman", serif;
         }
-        input[type=range] {
-            width: 100%;
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
         }
-        .value-display {
-            float: right;
-            color: #1a5fb4;
-            font-weight: bold;
+        input[type=range] {
+            flex-grow: 1;
+        }
+        input[type=number] {
+            width: 65px;
+            padding: 4px;
+            font-size: 14px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         .status {
             padding: 10px;
@@ -87,23 +96,35 @@
         
         <div class="controls">
             <div class="control-group">
-                <label>Longueur <span class="math-symbol">l₁</span> (Segment O₁O₂) : <span class="value-display" id="l1Val">120</span></label>
-                <input type="range" id="l1Range" min="50" max="200" value="120">
+                <label>Longueur <span class="math-symbol">l₁</span> (Segment O₁O₂) :</label>
+                <div class="control-row">
+                    <input type="range" id="l1Range" min="50" max="250" value="200">
+                    <input type="number" id="l1Num" min="50" max="250" value="200">
+                </div>
             </div>
 
             <div class="control-group">
-                <label>Longueur <span class="math-symbol">l₂</span> (Segment O₂P) : <span class="value-display" id="l2Val">100</span></label>
-                <input type="range" id="l2Range" min="50" max="200" value="100">
+                <label>Longueur <span class="math-symbol">l₂</span> (Segment O₂P) :</label>
+                <div class="control-row">
+                    <input type="range" id="l2Range" min="50" max="250" value="200">
+                    <input type="number" id="l2Num" min="50" max="250" value="200">
+                </div>
             </div>
 
             <div class="control-group">
-                <label>Angle <span class="math-symbol">θ₁</span> : <span class="value-display" id="t1Val">45°</span></label>
-                <input type="range" id="t1Range" min="-180" max="180" value="45">
+                <label>Angle <span class="math-symbol">θ₁</span> (°):</label>
+                <div class="control-row">
+                    <input type="range" id="t1Range" min="-180" max="180" value="90">
+                    <input type="number" id="t1Num" min="-180" max="180" value="90">
+                </div>
             </div>
 
             <div class="control-group">
-                <label>Angle <span class="math-symbol">θ₂</span> : <span class="value-display" id="t2Val">30°</span></label>
-                <input type="range" id="t2Range" min="-180" max="180" value="30">
+                <label>Angle <span class="math-symbol">θ₂</span> (°):</label>
+                <div class="control-row">
+                    <input type="range" id="t2Range" min="-180" max="180" value="0">
+                    <input type="number" id="t2Num" min="-180" max="180" value="0">
+                </div>
             </div>
 
             <div id="statusBox" class="status ok">État : Configuration valide</div>
@@ -114,19 +135,30 @@
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    const origin = { x: 60, y: 490 };
+    const origin = { x: 80, y: 470 };
     const scale = 1;
 
-    const l1Range = document.getElementById('l1Range');
-    const l2Range = document.getElementById('l2Range');
-    const t1Range = document.getElementById('t1Range');
-    const t2Range = document.getElementById('t2Range');
+    // Association des éléments de contrôle (curseurs et champs numériques)
+    const controls = {
+        l1: { range: document.getElementById('l1Range'), num: document.getElementById('l1Num') },
+        l2: { range: document.getElementById('l2Range'), num: document.getElementById('l2Num') },
+        t1: { range: document.getElementById('t1Range'), num: document.getElementById('t1Num') },
+        t2: { range: document.getElementById('t2Range'), num: document.getElementById('t2Num') }
+    };
 
-    const l1Val = document.getElementById('l1Val');
-    const l2Val = document.getElementById('l2Val');
-    const t1Val = document.getElementById('t1Val');
-    const t2Val = document.getElementById('t2Val');
     const statusBox = document.getElementById('statusBox');
+
+    function syncInputs(source, target) {
+        target.value = source.value;
+        updateScene();
+    }
+
+    // Synchronisation croisée curseurs <-> champs numériques
+    Object.keys(controls).forEach(key => {
+        let c = controls[key];
+        c.range.addEventListener('input', () => syncInputs(c.range, c.num));
+        c.num.addEventListener('input', () => syncInputs(c.num, c.range));
+    });
 
     function isSegmentValid(p1, p2) {
         const steps = 10;
@@ -221,15 +253,10 @@
     }
 
     function updateScene() {
-        const l1 = parseFloat(l1Range.value);
-        const l2 = parseFloat(l2Range.value);
-        const theta1 = parseFloat(t1Range.value) * Math.PI / 180;
-        const theta2 = parseFloat(t2Range.value) * Math.PI / 180;
-
-        l1Val.textContent = l1;
-        l2Val.textContent = l2;
-        t1Val.textContent = t1Range.value + '°';
-        t2Val.textContent = t2Range.value + '°';
+        const l1 = parseFloat(controls.l1.range.value);
+        const l2 = parseFloat(controls.l2.range.value);
+        const theta1 = parseFloat(controls.t1.range.value) * Math.PI / 180;
+        const theta2 = parseFloat(controls.t2.range.value) * Math.PI / 180;
 
         drawGrid();
         drawAccessibleEnvelope(l1, l2);
@@ -279,10 +306,6 @@
         drawPoint(O2.x, O2.y, "O₂");
         drawPoint(P.x, P.y, "P", true);
     }
-
-    [l1Range, l2Range, t1Range, t2Range].forEach(element => {
-        element.addEventListener('input', updateScene);
-    });
 
     // Premier rendu au chargement
     updateScene();
