@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Simulation Bras Robotique - Style GeoGebra</title>
+    <title>Simulation Bras Robotique - GeoGebra</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,7 +16,7 @@
         h1 {
             color: #1a5fb4;
             font-size: 22px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         .container {
             display: flex;
@@ -29,17 +29,16 @@
         canvas {
             border: 1px solid #ccc;
             background-color: #ffffff;
-            cursor: crosshair;
         }
         .controls {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            width: 300px;
+            width: 320px;
         }
         .control-group {
             background: #f8f9fa;
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
             border-left: 4px solid #1a5fb4;
         }
@@ -47,6 +46,8 @@
             font-weight: bold;
             font-size: 14px;
             color: #333;
+            display: block;
+            margin-bottom: 5px;
         }
         .math-symbol {
             font-style: italic;
@@ -54,34 +55,14 @@
         }
         input[type=range] {
             width: 100%;
-            margin-top: 5px;
         }
         .value-display {
             float: right;
             color: #1a5fb4;
             font-weight: bold;
         }
-        .btn {
-            background-color: #1a5fb4;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn:hover {
-            background-color: #154388;
-        }
-        .btn-stop {
-            background-color: #c51d34;
-        }
-        .btn-stop:hover {
-            background-color: #9c1527;
-        }
         .status {
-            padding: 8px;
+            padding: 10px;
             border-radius: 4px;
             text-align: center;
             font-weight: bold;
@@ -99,21 +80,19 @@
 </head>
 <body>
 
-    <h1>Simulation Bras Robotique - Cinématique & Espace Atteignable</h1>
+    <h1>Simulation Bras Robotique (Style GeoGebra)</h1>
 
     <div class="container">
         <canvas id="simCanvas" width="550" height="550"></canvas>
         
         <div class="controls">
             <div class="control-group">
-                <label>Longueur <span class="math-symbol">l₁</span> (Segment <span class="math-symbol">O₁O₂</span>) :</label>
-                <span class="value-display" id="l1Val">120</span> px
+                <label>Longueur <span class="math-symbol">l₁</span> (Segment O₁O₂) : <span class="value-display" id="l1Val">120</span></label>
                 <input type="range" id="l1Range" min="50" max="200" value="120">
             </div>
 
             <div class="control-group">
-                <label>Longueur <span class="math-symbol">l₂</span> (Segment <span class="math-symbol">O₂P</span>) :</label>
-                <span class="value-display" id="l2Val">100</span> px
+                <label>Longueur <span class="math-symbol">l₂</span> (Segment O₂P) : <span class="value-display" id="l2Val">100</span></label>
                 <input type="range" id="l2Range" min="50" max="200" value="100">
             </div>
 
@@ -127,17 +106,6 @@
                 <input type="range" id="t2Range" min="-180" max="180" value="30">
             </div>
 
-            <div class="control-group">
-                <label>Vitesse <span class="math-symbol">ω₁</span> : <span class="value-display" id="w1Val">1</span>°/s</label>
-                <input type="range" id="w1Range" min="-5" max="5" step="0.5" value="1">
-            </div>
-
-            <div class="control-group">
-                <label>Vitesse <span class="math-symbol">ω₂</span> : <span class="value-display" id="w2Val">-1.5</span>°/s</label>
-                <input type="range" id="w2Range" min="-5" max="5" step="0.5" value="-1.5">
-            </div>
-
-            <button class="btn" id="animBtn">Lancer l'animation</button>
             <div id="statusBox" class="status ok">État : Configuration valide</div>
         </div>
     </div>
@@ -146,64 +114,26 @@
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Paramètres
-    let l1 = 120;
-    let l2 = 100;
-    let theta1 = 45 * Math.PI / 180;
-    let theta2 = 30 * Math.PI / 180;
-    let omega1 = 1 * Math.PI / 180;
-    let omega2 = -1.5 * Math.PI / 180;
-
-    let isAnimating = false;
-
-    // Origine du repère dans le canvas (bas-gauche)
     const origin = { x: 60, y: 490 };
-    const scale = 1; // 1 pixel = 1 unité
+    const scale = 1;
 
-    // Éléments DOM
     const l1Range = document.getElementById('l1Range');
     const l2Range = document.getElementById('l2Range');
     const t1Range = document.getElementById('t1Range');
     const t2Range = document.getElementById('t2Range');
-    const w1Range = document.getElementById('w1Range');
-    const w2Range = document.getElementById('w2Range');
 
     const l1Val = document.getElementById('l1Val');
     const l2Val = document.getElementById('l2Val');
     const t1Val = document.getElementById('t1Val');
     const t2Val = document.getElementById('t2Val');
-    const w1Val = document.getElementById('w1Val');
-    const w2Val = document.getElementById('w2Val');
-    const animBtn = document.getElementById('animBtn');
     const statusBox = document.getElementById('statusBox');
 
-    function updateValuesFromDOM() {
-        l1 = parseFloat(l1Range.value);
-        l2 = parseFloat(l2Range.value);
-        if (!isAnimating) {
-            theta1 = parseFloat(t1Range.value) * Math.PI / 180;
-            theta2 = parseFloat(t2Range.value) * Math.PI / 180;
-        }
-        omega1 = parseFloat(w1Range.value) * Math.PI / 180;
-        omega2 = parseFloat(w2Range.value) * Math.PI / 180;
-
-        l1Val.textContent = l1;
-        l2Val.textContent = l2;
-        t1Val.textContent = Math.round(theta1 * 180 / Math.PI) + '°';
-        t2Val.textContent = Math.round(theta2 * 180 / Math.PI) + '°';
-        w1Val.textContent = (omega1 * 180 / Math.PI).toFixed(1);
-        w2Val.textContent = (omega2 * 180 / Math.PI).toFixed(1);
-    }
-
-    // Vérifie si un segment sort du premier quadrant (x < 0 ou y < 0)
     function isSegmentValid(p1, p2) {
-        // Échantillonnage du segment pour vérifier la contrainte
         const steps = 10;
         for (let i = 0; i <= steps; i++) {
             let t = i / steps;
             let x = p1.x + t * (p2.x - p1.x);
             let y = p1.y + t * (p2.y - p1.y);
-            // Tolérance pour les erreurs d'arrondi
             if (x < -0.1 || y < -0.1) return false;
         }
         return true;
@@ -230,15 +160,12 @@
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
         }
 
-        // Axes principaux (Style GeoGebra Rouge/Bleu ou Noir classique)
+        // Axes principaux
         ctx.strokeStyle = '#666';
         ctx.lineWidth = 2;
-        // Axe X
         ctx.beginPath(); ctx.moveTo(0, origin.y); ctx.lineTo(canvas.width - 10, origin.y); ctx.stroke();
-        // Axe Y
         ctx.beginPath(); ctx.moveTo(origin.x, canvas.height); ctx.lineTo(origin.x, 10); ctx.stroke();
 
-        // Flèches et labels axes
         ctx.fillStyle = '#333';
         ctx.font = '14px Arial';
         ctx.fillText("x₀", canvas.width - 25, origin.y - 10);
@@ -246,8 +173,7 @@
         ctx.fillText("O₁", origin.x - 20, origin.y + 20);
     }
 
-    function drawAccessibleEnvelope() {
-        // Tracer l'enveloppe approchée par balayage
+    function drawAccessibleEnvelope(l1, l2) {
         ctx.fillStyle = 'rgba(26, 95, 180, 0.12)';
         ctx.strokeStyle = 'rgba(26, 95, 180, 0.4)';
         ctx.lineWidth = 1;
@@ -256,7 +182,6 @@
         ctx.beginPath();
         let first = true;
         
-        // Balayage fin des angles pour trouver l'enveloppe extérieure
         for (let a1 = -Math.PI; a1 <= Math.PI; a1 += 0.05) {
             for (let a2 = -Math.PI; a2 <= Math.PI; a2 += 0.05) {
                 let o1 = { x: 0, y: 0 };
@@ -278,58 +203,7 @@
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-        ctx.setLineDash([]); // Reset line dash
-    }
-
-    function drawRobot() {
-        const O1 = origin;
-        const O2 = {
-            x: origin.x + l1 * Math.cos(theta1) * scale,
-            y: origin.y - l1 * Math.sin(theta1) * scale
-        };
-        const P = {
-            x: O2.x + l2 * Math.cos(theta1 + theta2) * scale,
-            y: O2.y - l2 * Math.sin(theta1 + theta2) * scale
-        };
-
-        const o1Math = { x: 0, y: 0 };
-        const o2Math = { x: l1 * Math.cos(theta1), y: l1 * Math.sin(theta1) };
-        const pMath = { x: o2Math.x + l2 * Math.cos(theta1 + theta2), y: o2Math.y + l2 * Math.sin(theta1 + theta2) };
-
-        const valid1 = isSegmentValid(o1Math, o2Math);
-        const valid2 = isSegmentValid(o2Math, pMath);
-        const isValid = valid1 && valid2;
-
-        if (isValid) {
-            statusBox.textContent = "État : Configuration valide (Dans le premier quadrant)";
-            statusBox.className = "status ok";
-            ctx.strokeStyle = '#1a5fb4'; // Bleu GeoGebra
-            ctx.fillStyle = '#1a5fb4';
-        } else {
-            statusBox.textContent = "État : HORS LIMITES (Segment en dehors du mur)";
-            statusBox.className = "status error";
-            ctx.strokeStyle = '#c51d34'; // Rouge alerte
-            ctx.fillStyle = '#c51d34';
-        }
-
-        // Dessin Segment l1 (O1 -> O2)
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.moveTo(O1.x, O1.y);
-        ctx.lineTo(O2.x, O2.y);
-        ctx.stroke();
-
-        // Dessin Segment l2 (O2 -> P)
-        ctx.strokeStyle = isValid ? '#2ec27e' : '#c51d34'; // Vert s'il est valide
-        ctx.beginPath();
-        ctx.moveTo(O2.x, O2.y);
-        ctx.lineTo(P.x, P.y);
-        ctx.stroke();
-
-        // Points O1, O2, P (Style points GeoGebra)
-        drawPoint(O1.x, O1.y, "O₁");
-        drawPoint(O2.x, O2.y, "O₂");
-        drawPoint(P.x, P.Y = P.y, "P", true);
+        ctx.setLineDash([]);
     }
 
     function drawPoint(x, y, label, isHighlight = false) {
@@ -346,47 +220,72 @@
         ctx.fillText(label, x + 10, y - 10);
     }
 
-    function loop() {
-        if (isAnimating) {
-            theta1 += omega1;
-            theta2 += omega2;
+    function updateScene() {
+        const l1 = parseFloat(l1Range.value);
+        const l2 = parseFloat(l2Range.value);
+        const theta1 = parseFloat(t1Range.value) * Math.PI / 180;
+        const theta2 = parseFloat(t2Range.value) * Math.PI / 180;
 
-            // Garder les angles entre -PI et +PI
-            if (theta1 > Math.PI) theta1 -= 2 * Math.PI;
-            if (theta1 < -Math.PI) theta1 += 2 * Math.PI;
-            if (theta2 > Math.PI) theta2 -= 2 * Math.PI;
-            if (theta2 < -Math.PI) theta2 += 2 * Math.PI;
-
-            t1Range.value = Math.round(theta1 * 180 / Math.PI);
-            t2Range.value = Math.round(theta2 * 180 / Math.PI);
-            updateValuesFromDOM();
-        }
+        l1Val.textContent = l1;
+        l2Val.textContent = l2;
+        t1Val.textContent = t1Range.value + '°';
+        t2Val.textContent = t2Range.value + '°';
 
         drawGrid();
-        drawAccessibleEnvelope();
-        drawRobot();
+        drawAccessibleEnvelope(l1, l2);
 
-        requestAnimationFrame(loop);
+        // Calculs positions bras
+        const O1 = origin;
+        const O2 = {
+            x: origin.x + l1 * Math.cos(theta1) * scale,
+            y: origin.y - l1 * Math.sin(theta1) * scale
+        };
+        const P = {
+            x: O2.x + l2 * Math.cos(theta1 + theta2) * scale,
+            y: O2.y - l2 * Math.sin(theta1 + theta2) * scale
+        };
+
+        const o1Math = { x: 0, y: 0 };
+        const o2Math = { x: l1 * Math.cos(theta1), y: l1 * Math.sin(theta1) };
+        const pMath = { x: o2Math.x + l2 * Math.cos(theta1 + theta2), y: o2Math.y + l2 * Math.sin(theta1 + theta2) };
+
+        const isValid = isSegmentValid(o1Math, o2Math) && isSegmentValid(o2Math, pMath);
+
+        if (isValid) {
+            statusBox.textContent = "État : Configuration valide (Dans le premier quadrant)";
+            statusBox.className = "status ok";
+        } else {
+            statusBox.textContent = "État : HORS LIMITES (Segment en dehors du mur)";
+            statusBox.className = "status error";
+        }
+
+        // Dessin segment l1
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#1a5fb4';
+        ctx.beginPath();
+        ctx.moveTo(O1.x, O1.y);
+        ctx.lineTo(O2.x, O2.y);
+        ctx.stroke();
+
+        // Dessin segment l2
+        ctx.strokeStyle = isValid ? '#2ec27e' : '#c51d34';
+        ctx.beginPath();
+        ctx.moveTo(O2.x, O2.y);
+        ctx.lineTo(P.x, P.y);
+        ctx.stroke();
+
+        // Points
+        drawPoint(O1.x, O1.y, "O₁");
+        drawPoint(O2.x, O2.y, "O₂");
+        drawPoint(P.x, P.y, "P", true);
     }
 
-    // Écouteurs d'événements
-    [l1Range, l2Range, t1Range, t2Range, w1Range, w2Range].forEach(element => {
-        element.addEventListener('input', updateValuesFromDOM);
+    [l1Range, l2Range, t1Range, t2Range].forEach(element => {
+        element.addEventListener('input', updateScene);
     });
 
-    animBtn.addEventListener('click', () => {
-        isAnimating = !isAnimating;
-        if (isAnimating) {
-            animBtn.textContent = "Arrêter l'animation";
-            animBtn.classList.add('btn-stop');
-        } else {
-            animBtn.textContent = "Lancer l'animation";
-            animBtn.classList.remove('btn-stop');
-        }
-    });
-
-    updateValuesFromDOM();
-    loop();
+    // Premier rendu au chargement
+    updateScene();
 </script>
 
 </body>
